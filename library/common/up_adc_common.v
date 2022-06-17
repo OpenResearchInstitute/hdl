@@ -1,6 +1,6 @@
 // ***************************************************************************
 // ***************************************************************************
-// Copyright 2014 - 2017 (c) Analog Devices, Inc. All rights reserved.
+// Copyright 2014 - 2022 (c) Analog Devices, Inc. All rights reserved.
 //
 // In this HDL repository, there are many different and unique modules, consisting
 // of various HDL (Verilog or VHDL) components. The individual modules are
@@ -49,7 +49,8 @@ module up_adc_common #(
   parameter         DRP_DISABLE = 0,
   parameter         USERPORTS_DISABLE = 0,
   parameter         GPIO_DISABLE = 0,
-  parameter         START_CODE_DISABLE = 0) (
+  parameter         START_CODE_DISABLE = 0
+) (
 
   // clock reset
 
@@ -74,6 +75,7 @@ module up_adc_common #(
   output              adc_ext_sync_manual_req,
   output       [4:0]  adc_num_lanes,
   output       [7:0]  adc_custom_control,
+  output              adc_crc_enable,
   output              adc_sdr_ddr_n,
   output              adc_symb_op,
   output              adc_symb_8_16b,
@@ -117,7 +119,8 @@ module up_adc_common #(
   input               up_rreq,
   input       [13:0]  up_raddr,
   output      [31:0]  up_rdata,
-  output              up_rack);
+  output              up_rack
+);
 
   // parameters
 
@@ -152,6 +155,7 @@ module up_adc_common #(
   reg                 up_rack_int = 'd0;
   reg         [31:0]  up_rdata_int = 'd0;
   reg         [ 7:0]  up_adc_custom_control = 'd0;  
+  reg                 up_adc_crc_enable = 'd0;
 
   // internal signals
 
@@ -203,6 +207,7 @@ module up_adc_common #(
       up_adc_pin_mode <= 'd0;
       up_pps_irq_mask <= 1'b1;
       up_adc_custom_control <= 'd0;
+      up_adc_crc_enable <= 'd0;
     end else begin
       up_adc_clk_enb_int <= ~up_adc_clk_enb;
       up_core_preset <= ~up_resetn;
@@ -247,6 +252,7 @@ module up_adc_common #(
       end else if ((up_wreq_s == 1'b1) && (up_waddr[6:0] == 7'h12)) begin
         up_adc_ext_sync_manual_req <= up_wdata[8];
       end else if ((up_wreq_s == 1'b1) && (up_waddr[6:0] == 7'h13)) begin
+        up_adc_crc_enable <= up_wdata[8];
         up_adc_custom_control <= up_wdata[7:0];
       end
       if ((up_wreq_s == 1'b1) && (up_waddr[6:0] == 7'h11)) begin
@@ -442,7 +448,7 @@ module up_adc_common #(
                                   3'b0, up_adc_ext_sync_manual_req,
                                   4'b0,
                                   1'b0, up_adc_ext_sync_disarm, up_adc_ext_sync_arm, 1'b0};
-          7'h13: up_rdata_int <= {24'd0, up_adc_custom_control};                        
+          7'h13: up_rdata_int <= {23'd0, up_adc_crc_enable, up_adc_custom_control};                        
           7'h15: up_rdata_int <= up_adc_clk_count_s;
           7'h16: up_rdata_int <= adc_clk_ratio;
           7'h17: up_rdata_int <= {28'd0, up_status_pn_err, up_status_pn_oos, up_status_or, up_status_s};
@@ -470,13 +476,22 @@ module up_adc_common #(
 
   // resets
 
-  ad_rst i_mmcm_rst_reg (.rst_async(up_mmcm_preset), .clk(up_clk),  .rstn(), .rst(mmcm_rst));
-  ad_rst i_core_rst_reg (.rst_async(up_core_preset), .clk(adc_clk), .rstn(), .rst(adc_rst_s));
+  ad_rst i_mmcm_rst_reg (
+    .rst_async(up_mmcm_preset), 
+    .clk(up_clk),  
+    .rstn(), 
+    .rst(mmcm_rst));
+    
+  ad_rst i_core_rst_reg (
+    .rst_async(up_core_preset), 
+    .clk(adc_clk), 
+    .rstn(), 
+    .rst(adc_rst_s));
 
   // adc control & status
 
   up_xfer_cntrl #(
-    .DATA_WIDTH(57) 
+    .DATA_WIDTH(58) 
   ) i_xfer_cntrl (
     .up_rstn (up_rstn),
     .up_clk (up_clk),
@@ -485,6 +500,7 @@ module up_adc_common #(
                       up_adc_symb_8_16b,
                       up_adc_num_lanes,
                       up_adc_custom_control,
+                      up_adc_crc_enable,
                       up_adc_sref_sync,
                       up_adc_ext_sync_arm,
                       up_adc_ext_sync_disarm,
@@ -503,6 +519,7 @@ module up_adc_common #(
                       adc_symb_8_16b,
                       adc_num_lanes,
                       adc_custom_control,
+                      adc_crc_enable,
                       adc_sref_sync,
                       adc_ext_sync_arm,
                       adc_ext_sync_disarm,
@@ -544,6 +561,3 @@ module up_adc_common #(
     .d_clk (adc_clk));
 
 endmodule
-
-// ***************************************************************************
-// ***************************************************************************
