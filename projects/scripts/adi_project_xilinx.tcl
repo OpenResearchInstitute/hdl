@@ -1,6 +1,6 @@
 
 ## Define the supported tool version
-set required_vivado_version "2021.1"
+set required_vivado_version "2022.1"
 if {[info exists ::env(REQUIRED_VIVADO_VERSION)]} {
   set required_vivado_version $::env(REQUIRED_VIVADO_VERSION)
 } elseif {[info exists REQUIRED_VIVADO_VERSION]} {
@@ -134,7 +134,7 @@ proc adi_project {project_name {mode 0} {parameter_list {}} } {
     set board [lindex [lsearch -all -inline [get_board_parts] *vck190*] end]
   }
   if [regexp "_vc709$" $project_name] {
-    set device "xc7vx690tffg1761-2"  
+    set device "xc7vx690tffg1761-2"
     set board [lindex [lsearch -all -inline [get_board_parts] *vc709*] end]
   }
 
@@ -167,7 +167,7 @@ proc adi_project_create {project_name mode parameter_list device {board "not-app
   ## update the value of $p_device only if it was not already updated elsewhere
   if {$p_device eq "none"} {
     set p_device $device
-  } 
+  }
   set p_board $board
 
   if [regexp "^xc7z" $p_device] {
