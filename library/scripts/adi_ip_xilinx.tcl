@@ -1,5 +1,6 @@
 
 source $ad_hdl_dir/library/scripts/adi_xilinx_device_info_enc.tcl
+# source ../../../scripts/adi_env.tcl
 
 # check tool version
 
