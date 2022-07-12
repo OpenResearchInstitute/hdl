@@ -97,10 +97,10 @@ module system_top (
   inout                   gpio_2_mode_2,
   inout                   gpio_3_mode_3,
   inout                   gpio_4_filter,
-  inout                   reset_n,
-  inout                   start_n,
-  inout                   sync_n,
-  inout                   sync_in_n,
+  output                  reset_n,
+  output                  start_n,
+  output                  sync_mosi,
+  input                   sync_miso,
   output                  mclk);
 
   // internal signals
@@ -118,10 +118,6 @@ module system_top (
   wire    [31:0]  adc_data_5;
   wire    [31:0]  adc_data_6;
   wire    [31:0]  adc_data_7;
-  wire            up_sshot;
-  wire    [ 1:0]  up_format;
-  wire            up_crc_enable;
-  wire            up_crc_4_or_16_n;
   wire    [63:0]  adc_gpio_i;
   wire    [63:0]  adc_gpio_o;
   wire    [63:0]  adc_gpio_t;
@@ -138,26 +134,22 @@ module system_top (
   // use crystal
 
   assign mclk = 1'b0;
-  assign up_sshot = gpio_o[36];
-  assign up_format = gpio_o[35:34];
-  assign up_crc_enable = gpio_o[33];
-  assign up_crc_4_or_16_n = gpio_o[32];
+  assign start_n = gpio_o[33];
+  assign reset_n = gpio_o[32];
 
+  
   // instantiations
 
-  ad_iobuf #(.DATA_WIDTH(9)) i_iobuf (
-    .dio_t ({gpio_t[52:48], gpio_t[43:40]}),
-    .dio_i ({gpio_o[52:48], gpio_o[43:40]}),
-    .dio_o ({gpio_i[52:48], gpio_i[43:40]}),
+  ad_iobuf #(.DATA_WIDTH(5)) i_iobuf (
+    .dio_t (gpio_t[52:48]),
+    .dio_i (gpio_o[52:48]),
+    .dio_o (gpio_i[52:48]),
     .dio_p ({ gpio_4_filter,        // 52
               gpio_3_mode_3,        // 51
               gpio_2_mode_2,        // 50
               gpio_1_mode_1,        // 49
-              gpio_0_mode_0,        // 48
-              sync_in_n,            // 43
-              sync_n,               // 42
-              start_n,              // 41
-              reset_n}));           // 40
+              gpio_0_mode_0         // 48
+            }));           
 
   ad_iobuf #(.DATA_WIDTH(32)) i_iobuf_bd (
     .dio_t (gpio_t[31:0]),
@@ -182,50 +174,13 @@ module system_top (
     .dio_o (iic_mux_sda_i_s),
     .dio_p (iic_mux_sda));
 
-  ad7768_if i_ad7768_if (
+
+  system_wrapper i_system_wrapper (
     .clk_in (clk_in),
     .ready_in (ready_in),
     .data_in (data_in),
-    .adc_clk (adc_clk),
-    .adc_valid (adc_valid),
-    .adc_valid_pp (adc_valid_pp),
-    .adc_sync (adc_sync),
-    .adc_data (adc_data),
-    .adc_data_0 (adc_data_0),
-    .adc_data_1 (adc_data_1),
-    .adc_data_2 (adc_data_2),
-    .adc_data_3 (adc_data_3),
-    .adc_data_4 (adc_data_4),
-    .adc_data_5 (adc_data_5),
-    .adc_data_6 (adc_data_6),
-    .adc_data_7 (adc_data_7),
-    .up_sshot (up_sshot),
-    .up_format (up_format),
-    .up_crc_enable (up_crc_enable),
-    .up_crc_4_or_16_n (up_crc_4_or_16_n),
-    .up_status_clr (adc_gpio_o[32:0]),
-    .up_status (adc_gpio_i[32:0]));
-
-  system_wrapper i_system_wrapper (
-    .adc_clk (adc_clk),
-    .adc_data (adc_data),
-    .adc_data_0 (adc_data_0),
-    .adc_data_1 (adc_data_1),
-    .adc_data_2 (adc_data_2),
-    .adc_data_3 (adc_data_3),
-    .adc_data_4 (adc_data_4),
-    .adc_data_5 (adc_data_5),
-    .adc_data_6 (adc_data_6),
-    .adc_data_7 (adc_data_7),
-    .adc_gpio_0_i (adc_gpio_i[31:0]),
-    .adc_gpio_0_o (adc_gpio_o[31:0]),
-    .adc_gpio_0_t (adc_gpio_t[31:0]),
-    .adc_gpio_1_i (adc_gpio_i[63:32]),
-    .adc_gpio_1_o (adc_gpio_o[63:32]),
-    .adc_gpio_1_t (adc_gpio_t[63:32]),
-    .adc_valid (adc_valid),
-    .adc_valid_pp (adc_valid_pp),
-    .adc_sync (adc_sync),
+    .sync_mosi(),
+    .sync_miso(sync_miso),
     .ddr_addr (ddr_addr),
     .ddr_ba (ddr_ba),
     .ddr_cas_n (ddr_cas_n),
