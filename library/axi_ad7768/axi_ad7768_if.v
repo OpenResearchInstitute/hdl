@@ -60,30 +60,30 @@ module ad7768_if #(
   (* mark_debug = "true" *) output      [ 31:0]     adc_data_5,
   (* mark_debug = "true" *) output      [ 31:0]     adc_data_6,
   (* mark_debug = "true" *) output      [ 31:0]     adc_data_7,
-  (* mark_debug = "true" *) output      [  7:0]     adc_status_0,
-  (* mark_debug = "true" *) output      [  7:0]     adc_status_1,
-  (* mark_debug = "true" *) output      [  7:0]     adc_status_2,
-  (* mark_debug = "true" *) output      [  7:0]     adc_status_3,
-  (* mark_debug = "true" *) output      [  7:0]     adc_status_4,
-  (* mark_debug = "true" *) output      [  7:0]     adc_status_5,
-  (* mark_debug = "true" *) output      [  7:0]     adc_status_6,
-  (* mark_debug = "true" *) output      [  7:0]     adc_status_7,
+    output      [  7:0]     adc_status_0,
+    output      [  7:0]     adc_status_1,
+    output      [  7:0]     adc_status_2,
+    output      [  7:0]     adc_status_3,
+    output      [  7:0]     adc_status_4,
+    output      [  7:0]     adc_status_5,
+    output      [  7:0]     adc_status_6,
+    output      [  7:0]     adc_status_7,
   (* mark_debug = "true" *) output      [  7:0]     adc_crc_ch_mismatch,
   // control interface
 
   input                   adc_sshot,
- (* mark_debug = "true" *) input       [ 4:0]      adc_format,
- (* mark_debug = "true" *) input                   adc_crc_enable);
+  input       [ 4:0]      adc_format,
+  (* mark_debug = "true" *) input                   adc_crc_enable);
 
   // internal registers
 
 
   reg               adc_crc_valid = 'd0;
   reg     [ 31:0]   adc_data_int = 'd0;
-  reg     [  3:0]   adc_crc_scnt_8 = 'd0;
+  (* mark_debug = "true" *) reg     [  3:0]   adc_crc_scnt_8 = 'd0;
   reg     [  8:0]   adc_cnt_p = 'd0;
   reg               adc_valid_p = 'd0;
-  reg     [255:0]   adc_data_p = 'd0;
+  reg     [255:0]   adc_data_p  = 'd0;
   reg               adc_ready_d1 = 'd0;
   reg               adc_ready = 'd0;
   reg               adc_ready_d = 'd0;
@@ -119,9 +119,9 @@ module ad7768_if #(
   reg      [ 7:0]       adc_status_7_s = 'd0;
 
   reg     [  7:0]   adc_crc_ch_mismatch_s = 'd0;
-  reg               adc_valid_s    = 'b0; 
+   (* mark_debug = "true" *) reg               adc_valid_s    = 'b0; 
   reg               adc_valid_s_d   = 'b0;
-  reg               adc_crc_valid_p = 'b0;
+   (* mark_debug = "true" *) reg               adc_crc_valid_p = 'b0;
   reg               adc_crc_valid_p_d = 'b0;
   reg               sync_miso_d ='d0;
   reg               sync_miso_m1 ='d0;
@@ -129,20 +129,21 @@ module ad7768_if #(
   reg               adc_cnt_crc_enable_s_d;
   reg               adc_cnt_crc_enable_s_dd;
   reg               sync_ss = 'd0;
-
- (* mark_debug = "true" *) reg      [2:0]    debug  = 'd0;
- (* mark_debug = "true" *) reg      [2:0]    debug1 = 'd0;
+ (* mark_debug = "true" *) reg               crc_cnt_enable= 'd0;
+ (* mark_debug = "true" *) reg               sync_miso_l= 'd0;
 
   // internal signals
 
-  wire              sync_miso_s;
+   (* mark_debug = "true" *) wire              sync_miso_s;
+  wire              adc_cnt_crc_enable_s;
   wire              adc_cnt_enable_s;
   wire              adc_ready_in_s;
   wire    [ 8:0]    adc_cnt_value;
   wire    [ 3:0]    adc_crc_cnt_value;
   wire    [ 7:0]    adc_crc_mismatch_s;
   wire    [ 7:0]    adc_crc_in_s[0:7];
- (* mark_debug = "true" *) wire    [ 7:0]    adc_crc_s[0:7];
+  (* mark_debug = "true" *)  wire    [ 7:0]    adc_crc_s[0:7];
+ 
 
   // function (crc)
 
@@ -306,11 +307,22 @@ module ad7768_if #(
   assign adc_crc_cnt_value = 4'h4; 
   assign adc_cnt_crc_enable_s = (adc_crc_scnt_8 < adc_crc_cnt_value) ? 1'b1 : 1'b0;
 
-  always @(posedge adc_clk) begin
+  always @(negedge adc_clk) begin
+    if( sync_miso_s == 1'b1 ) begin
+      sync_miso_l <= 1'b1;
 
+    end else if (adc_crc_enable == 1'b0 ) begin 
+      sync_miso_l <= 1'b0;
+    end 
+
+    if (sync_miso_l == 1'b1 && adc_valid_s_d == 1'b1) begin 
+        crc_cnt_enable <= 1'b1;
+    end else if (adc_crc_enable == 1'b0 ) begin 
+      crc_cnt_enable <= 1'b0;
+    end 
     if ((sync_miso_s == 1'b1) || (adc_cnt_crc_enable_s == 1'b0) || (adc_crc_enable == 1'b0) ) begin
       adc_crc_scnt_8 <= 4'd0;
-    end else if (adc_valid_p == 1'b1) begin
+    end else if (adc_ready_in_s == 1'b1 && crc_cnt_enable == 1'b1) begin
       adc_crc_scnt_8 <= adc_crc_scnt_8 + 1'b1;
     end
     if (adc_crc_scnt_8 == adc_crc_cnt_value) begin
@@ -466,7 +478,6 @@ end
         adc_data_s[5] <= adc_data_p[((32*2)+31):(32*2)];
         adc_data_s[6] <= adc_data_p[((32*1)+31):(32*1)];
         adc_data_s[7] <= adc_data_p[((32*0)+31):(32*0)];
-        debug <= 'h1;
       end else if( adc_format == 'h1 || (adc_format == 'h0 && NUM_CHANNELS == 4 )) begin   // 2 active lines or 1 for ad7768-4
         adc_data_s[0] <= adc_data_p[((32*3)+31):(32*3)];
         adc_data_s[1] <= adc_data_p[((32*2)+31):(32*2)];
@@ -476,7 +487,6 @@ end
         adc_data_s[5] <= adc_data_p[((32*6)+31):(32*6)];
         adc_data_s[6] <= adc_data_p[((32*5)+31):(32*5)];
         adc_data_s[7] <= adc_data_p[((32*4)+31):(32*4)];
-        debug <= 'h2;
       end else begin                       // 8 active lines
         adc_data_s[0] <= adc_data_p[((32*0)+31):(32*0)];
         adc_data_s[1] <= adc_data_p[((32*1)+31):(32*1)];
@@ -486,7 +496,6 @@ end
         adc_data_s[5] <= adc_data_p[((32*5)+31):(32*5)];
         adc_data_s[6] <= adc_data_p[((32*6)+31):(32*6)];
         adc_data_s[7] <= adc_data_p[((32*7)+31):(32*7)];
-        debug <= 'h3;
       end
       adc_valid_s    <= adc_valid_p;
     end else begin
@@ -507,13 +516,11 @@ end
  always @(negedge adc_clk) begin
     if( adc_format == 'h0 && NUM_CHANNELS == 8 ) begin     // 1 active line for ad7768
       if (adc_cnt_p == 'h0 ) begin  
-         debug1<='h0;
         adc_data_p[((256*0)+255):(256*0)] <= {255'd0, data_in[0]};
       end else begin
         adc_data_p[((256*0)+255):(255*0)] <= {adc_data_p[((256*0)+254):(256*0)], data_in[0]};
       end
     end else if( adc_format == 'h1 || (adc_format == 'h0 && NUM_CHANNELS == 4 )) begin  // 2 active lines or 1 active lane for ad7768-4
-     debug1<='h1;
       if (adc_cnt_p == 'h0 ) begin 
         adc_data_p[((128*0)+127):(128*0)] <= {127'd0, data_in[0]};
         adc_data_p[((128*1)+127):(128*1)] <= {127'd0, data_in[1]};
@@ -522,7 +529,6 @@ end
         adc_data_p[((128*1)+127):(128*1)] <= {adc_data_p[((128*1)+126):(128*1)], data_in[1]};
       end
     end else if( adc_format == 'h2 )  begin   // 8 active lines or 4 active lane for ad7768-4
-         debug1<='h2;
      if (adc_cnt_p == 'h0 ) begin 
         adc_data_p[((32*0)+31):(32*0)] <= {31'd0, data_in[0]};
         adc_data_p[((32*1)+31):(32*1)] <= {31'd0, data_in[1]};
@@ -533,7 +539,6 @@ end
         adc_data_p[((32*6)+31):(32*6)] <= {31'd0, data_in[6]};
         adc_data_p[((32*7)+31):(32*7)] <= {31'd0, data_in[7]};
       end else begin
-
         adc_data_p[((32*0)+31):(32*0)] <= {adc_data_p[((32*0)+30):(32*0)], data_in[0]};
         adc_data_p[((32*1)+31):(32*1)] <= {adc_data_p[((32*1)+30):(32*1)], data_in[1]};
         adc_data_p[((32*2)+31):(32*2)] <= {adc_data_p[((32*2)+30):(32*2)], data_in[2]};
@@ -549,9 +554,7 @@ end
   // ready (single shot or continous)
 
   always @(posedge adc_clk) begin
-    adc_ready_d1 <= adc_ready_in_s;
-    adc_ready <= adc_sshot ~^ adc_ready_d1;
-   
+    adc_ready <= adc_sshot ~^ adc_ready_in_s;
   end
 
   // control signals
