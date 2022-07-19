@@ -35,7 +35,7 @@
 
 `timescale 1ns/100ps
 
-module ad7768_if #(
+module axi_ad7768_if #(
   parameter NUM_CHANNELS = 8
   ) (
 
@@ -49,6 +49,7 @@ module ad7768_if #(
   // data path interface
 
   (* mark_debug = "true" *) output                  adc_clk,
+
   (* mark_debug = "true" *) output                  adc_valid,
   (* mark_debug = "true" *) output      [ 31:0]     adc_data,
   (* mark_debug = "true" *) output                  adc_sync,
@@ -129,8 +130,6 @@ module ad7768_if #(
   reg               adc_cnt_crc_enable_s_d;
   reg               adc_cnt_crc_enable_s_dd;
   reg               sync_ss = 'd0;
- (* mark_debug = "true" *) reg               crc_cnt_enable= 'd0;
- (* mark_debug = "true" *) reg               sync_miso_l= 'd0;
 
   // internal signals
 
@@ -142,6 +141,7 @@ module ad7768_if #(
   wire    [ 3:0]    adc_crc_cnt_value;
   wire    [ 7:0]    adc_crc_mismatch_s;
   wire    [ 7:0]    adc_crc_in_s[0:7];
+   (* mark_debug = "true" *)  wire             adc_crc_enable_int;
   (* mark_debug = "true" *)  wire    [ 7:0]    adc_crc_s[0:7];
  
 
@@ -202,6 +202,7 @@ module ad7768_if #(
 
   assign adc_ready_in_s = ready_in;
   assign adc_clk = clk_in;
+  assign adc_clk_n = ~clk_in;
   assign adc_valid = adc_valid_s_d;
   assign adc_data= adc_data_int;
   assign adc_data_0 = adc_data_s_d[0];
@@ -255,7 +256,7 @@ module ad7768_if #(
 
 
    always @(posedge adc_clk) begin
-     if (adc_ready_in_s) begin
+     if (adc_valid_p) begin
       sync_ss <= 1'h1;
     end else if (adc_sync) begin
       sync_ss <= 1'h0;
@@ -306,33 +307,26 @@ module ad7768_if #(
 
   assign adc_crc_cnt_value = 4'h4; 
   assign adc_cnt_crc_enable_s = (adc_crc_scnt_8 < adc_crc_cnt_value) ? 1'b1 : 1'b0;
+  assign adc_crc_enable_int = (adc_ready_in_s == 1'b1) ? adc_crc_enable: 1'b0;
 
   always @(negedge adc_clk) begin
-    if( sync_miso_s == 1'b1 ) begin
-      sync_miso_l <= 1'b1;
 
-    end else if (adc_crc_enable == 1'b0 ) begin 
-      sync_miso_l <= 1'b0;
-    end 
-
-    if (sync_miso_l == 1'b1 && adc_valid_s_d == 1'b1) begin 
-        crc_cnt_enable <= 1'b1;
-    end else if (adc_crc_enable == 1'b0 ) begin 
-      crc_cnt_enable <= 1'b0;
-    end 
     if ((sync_miso_s == 1'b1) || (adc_cnt_crc_enable_s == 1'b0) || (adc_crc_enable == 1'b0) ) begin
       adc_crc_scnt_8 <= 4'd0;
-    end else if (adc_ready_in_s == 1'b1 && crc_cnt_enable == 1'b1) begin
+    end else if (adc_crc_enable_int == 1'b1) begin
       adc_crc_scnt_8 <= adc_crc_scnt_8 + 1'b1;
     end
-    if (adc_crc_scnt_8 == adc_crc_cnt_value) begin
+  end
+
+  always @(posedge adc_clk) begin
+      if (adc_crc_scnt_8 == adc_crc_cnt_value) begin
       adc_crc_valid_p <= 1'b1;
     end else begin
       adc_crc_valid_p <= 1'b0;
     end
     adc_crc_valid_p_d <= adc_crc_valid_p;
   end
-  
+
   // capturing 4 samples after sync flag 
 
 always @(posedge adc_clk) begin

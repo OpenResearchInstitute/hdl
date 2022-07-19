@@ -238,7 +238,7 @@ module axi_ad7768 #(
   
   // adc interface
   
-ad7768_if  #(
+axi_ad7768_if  #(
   .NUM_CHANNELS(NUM_CHANNELS)
   ) i_ad7768_if (
   .clk_in (clk_in),
