@@ -99,8 +99,6 @@ module system_top (
   inout                   gpio_4_filter,
   output                  reset_n,
   output                  start_n,
-  output                  sync_mosi,
-  input                   sync_miso,
   output                  mclk);
 
   // internal signals
@@ -179,8 +177,6 @@ module system_top (
     .clk_in (clk_in),
     .ready_in (ready_in),
     .data_in (data_in),
-    .sync_mosi(),
-    .sync_miso(sync_miso),
     .ddr_addr (ddr_addr),
     .ddr_ba (ddr_ba),
     .ddr_cas_n (ddr_cas_n),

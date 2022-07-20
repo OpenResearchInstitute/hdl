@@ -4,8 +4,6 @@
 create_bd_port -dir I clk_in
 create_bd_port -dir I ready_in
 create_bd_port -dir I -from 7 -to 0 data_in
-create_bd_port -dir I sync_miso
-create_bd_port -dir O sync_mosi
 
 # instances
 
@@ -53,7 +51,6 @@ ad_connect axi_ad7768_adc/s_axi_aclk        sys_ps7/FCLK_CLK0
 ad_connect axi_ad7768_adc/clk_in            clk_in
 ad_connect axi_ad7768_adc/ready_in          ready_in
 ad_connect axi_ad7768_adc/data_in           data_in
-ad_connect axi_ad7768_adc/sync_miso         sync_miso
 ad_connect axi_ad7768_adc/adc_valid         util_ad7768_adc_pack/fifo_wr_en
 ad_connect axi_ad7768_adc/adc_clk           util_ad7768_adc_pack/clk
 ad_connect axi_ad7768_adc/adc_reset         util_ad7768_adc_pack/reset

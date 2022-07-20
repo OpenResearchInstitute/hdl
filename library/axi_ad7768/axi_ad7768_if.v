@@ -44,8 +44,7 @@ module axi_ad7768_if #(
    input                   clk_in,
   (* mark_debug = "true" *) input                   ready_in,
   (* mark_debug = "true" *) input       [ 7:0]      data_in,
-  (* mark_debug = "true" *) input                   sync_miso,
-
+ 
   // data path interface
 
   (* mark_debug = "true" *) output                  adc_clk,
@@ -81,7 +80,7 @@ module axi_ad7768_if #(
 
   reg               adc_crc_valid = 'd0;
   reg     [ 31:0]   adc_data_int = 'd0;
-  (* mark_debug = "true" *) reg     [  3:0]   adc_crc_scnt_8 = 'd0;
+   (* mark_debug = "true" *) reg     [  3:0]   adc_crc_cnt = 'd0;
   reg     [  8:0]   adc_cnt_p = 'd0;
   reg               adc_valid_p = 'd0;
   reg     [255:0]   adc_data_p  = 'd0;
@@ -93,14 +92,12 @@ module axi_ad7768_if #(
 
 // new added 
  
-  reg     [ 95:0]  adc_crc_data      [0:7];
-  reg     [ 95:0]  adc_crc_data_s    [0:7];
-  (* mark_debug = "true" *) reg     [  7:0]  adc_crc_read_data [0:7];
+ (* mark_debug = "true" *)  reg     [ 95:0]  adc_crc_data_s    [0:7];
+ (* mark_debug = "true" *)  reg     [  7:0]  adc_crc_read_data [0:7];
   reg     [  7:0]  adc_crc_reg       [0:7];
   reg     [ 31:0]  adc_data_s_d      [0:7];
   reg     [ 31:0]  adc_data_s        [0:7];
 
-  reg     [ 31:0]   adc_data_ser   = 'd0;
   reg     [255:0]   adc_ch_data_d0 = 'd0;
   reg     [255:0]   adc_ch_data_d1 = 'd0;
   reg     [255:0]   adc_ch_data_d2 = 'd0;
@@ -120,29 +117,22 @@ module axi_ad7768_if #(
   reg      [ 7:0]       adc_status_7_s = 'd0;
 
   reg     [  7:0]   adc_crc_ch_mismatch_s = 'd0;
-   (* mark_debug = "true" *) reg               adc_valid_s    = 'b0; 
+  reg               adc_valid_s    = 'b0; 
   reg               adc_valid_s_d   = 'b0;
-   (* mark_debug = "true" *) reg               adc_crc_valid_p = 'b0;
+  (* mark_debug = "true" *) reg               adc_crc_valid_p = 'b0;
   reg               adc_crc_valid_p_d = 'b0;
-  reg               sync_miso_d ='d0;
-  reg               sync_miso_m1 ='d0;
-  reg               sync_miso_m2 = 'd0;
-  reg               adc_cnt_crc_enable_s_d;
-  reg               adc_cnt_crc_enable_s_dd;
   reg               sync_ss = 'd0;
 
   // internal signals
 
-   (* mark_debug = "true" *) wire              sync_miso_s;
-  wire              adc_cnt_crc_enable_s;
   wire              adc_cnt_enable_s;
   wire              adc_ready_in_s;
   wire    [ 8:0]    adc_cnt_value;
-  wire    [ 3:0]    adc_crc_cnt_value;
   wire    [ 7:0]    adc_crc_mismatch_s;
   wire    [ 7:0]    adc_crc_in_s[0:7];
-   (* mark_debug = "true" *)  wire             adc_crc_enable_int;
-  (* mark_debug = "true" *)  wire    [ 7:0]    adc_crc_s[0:7];
+ (* mark_debug = "true" *)  wire    [ 7:0]    adc_crc_s[0:7];
+  (* mark_debug = "true" *)  wire              crc_in_sync_n;
+
  
 
   // function (crc)
@@ -222,6 +212,7 @@ module axi_ad7768_if #(
   assign adc_status_6 = adc_status_6_s; 
   assign adc_status_7 = adc_status_7_s; 
   assign adc_crc_ch_mismatch = adc_crc_ch_mismatch_s;
+  assign crc_in_sync_n = |adc_crc_mismatch_s;
 
   // CRC check
 
@@ -234,14 +225,14 @@ module axi_ad7768_if #(
   assign adc_crc_mismatch_s[6] = (adc_crc_read_data[6] == adc_crc_s[6] && NUM_CHANNELS == 8) ? 1'b0 : adc_crc_enable;
   assign adc_crc_mismatch_s[7] = (adc_crc_read_data[7] == adc_crc_s[7] && NUM_CHANNELS == 8) ? 1'b0 : adc_crc_enable;  
 
-  assign adc_crc_s[0] = crc8(adc_crc_data[0], adc_crc_in_s[0]);
-  assign adc_crc_s[1] = crc8(adc_crc_data[1], adc_crc_in_s[1]);
-  assign adc_crc_s[2] = crc8(adc_crc_data[2], adc_crc_in_s[2]);
-  assign adc_crc_s[3] = crc8(adc_crc_data[3], adc_crc_in_s[3]);
-  assign adc_crc_s[4] = crc8(adc_crc_data[4], adc_crc_in_s[4]);
-  assign adc_crc_s[5] = crc8(adc_crc_data[5], adc_crc_in_s[5]);
-  assign adc_crc_s[6] = crc8(adc_crc_data[6], adc_crc_in_s[6]);
-  assign adc_crc_s[7] = crc8(adc_crc_data[7], adc_crc_in_s[7]);
+  assign adc_crc_s[0] = crc8(adc_crc_data_s[0], adc_crc_in_s[0]);
+  assign adc_crc_s[1] = crc8(adc_crc_data_s[1], adc_crc_in_s[1]);
+  assign adc_crc_s[2] = crc8(adc_crc_data_s[2], adc_crc_in_s[2]);
+  assign adc_crc_s[3] = crc8(adc_crc_data_s[3], adc_crc_in_s[3]);
+  assign adc_crc_s[4] = crc8(adc_crc_data_s[4], adc_crc_in_s[4]);
+  assign adc_crc_s[5] = crc8(adc_crc_data_s[5], adc_crc_in_s[5]);
+  assign adc_crc_s[6] = crc8(adc_crc_data_s[6], adc_crc_in_s[6]);
+  assign adc_crc_s[7] = crc8(adc_crc_data_s[7], adc_crc_in_s[7]);
 
   assign adc_crc_in_s[0] = (adc_crc_enable == 'd1) ? 8'hff : adc_crc_reg[0];
   assign adc_crc_in_s[1] = (adc_crc_enable == 'd1) ? 8'hff : adc_crc_reg[1];
@@ -254,9 +245,8 @@ module axi_ad7768_if #(
 
   assign adc_sync = adc_valid_s & ~adc_valid_s_d & sync_ss;
 
-
-   always @(posedge adc_clk) begin
-     if (adc_valid_p) begin
+  always @(posedge adc_clk) begin
+    if (adc_valid_p) begin
       sync_ss <= 1'h1;
     end else if (adc_sync) begin
       sync_ss <= 1'h0;
@@ -268,7 +258,7 @@ module axi_ad7768_if #(
   
     end
 
-    always @(posedge adc_clk) begin
+  always @(posedge adc_clk) begin
   
     adc_ch_data_d0 <= {adc_ch_data_d0[((32*6)+31):(32*0)],adc_data_s[0]};
     adc_ch_data_d1 <= {adc_ch_data_d1[((32*6)+31):(32*0)],adc_data_s[1]};
@@ -292,47 +282,37 @@ module axi_ad7768_if #(
    adc_status_6_s   <= (adc_valid_s == 1'b1 ) ? adc_data_s[6][31:24]: adc_status_6_s; 
    adc_status_7_s   <= (adc_valid_s == 1'b1 ) ? adc_data_s[7][31:24]: adc_status_7_s; 
 
-   adc_crc_ch_mismatch_s[0] <= (adc_crc_valid_p_d == 1'b1 ) ? adc_crc_mismatch_s[0] : adc_crc_ch_mismatch_s[0];
-   adc_crc_ch_mismatch_s[1] <= (adc_crc_valid_p_d == 1'b1 ) ? adc_crc_mismatch_s[1] : adc_crc_ch_mismatch_s[1];
-   adc_crc_ch_mismatch_s[2] <= (adc_crc_valid_p_d == 1'b1 ) ? adc_crc_mismatch_s[2] : adc_crc_ch_mismatch_s[2];
-   adc_crc_ch_mismatch_s[3] <= (adc_crc_valid_p_d == 1'b1 ) ? adc_crc_mismatch_s[3] : adc_crc_ch_mismatch_s[3];
-   adc_crc_ch_mismatch_s[4] <= (adc_crc_valid_p_d == 1'b1 ) ? adc_crc_mismatch_s[4] : adc_crc_ch_mismatch_s[4];
-   adc_crc_ch_mismatch_s[5] <= (adc_crc_valid_p_d == 1'b1 ) ? adc_crc_mismatch_s[5] : adc_crc_ch_mismatch_s[5];
-   adc_crc_ch_mismatch_s[6] <= (adc_crc_valid_p_d == 1'b1 ) ? adc_crc_mismatch_s[6] : adc_crc_ch_mismatch_s[6];
-   adc_crc_ch_mismatch_s[7] <= (adc_crc_valid_p_d == 1'b1 ) ? adc_crc_mismatch_s[7] : adc_crc_ch_mismatch_s[7];
+   adc_crc_ch_mismatch_s[0] <= (adc_crc_valid_p == 1'b1) ? adc_crc_mismatch_s[0] : adc_crc_ch_mismatch_s[0];
+   adc_crc_ch_mismatch_s[1] <= (adc_crc_valid_p == 1'b1) ? adc_crc_mismatch_s[1] : adc_crc_ch_mismatch_s[1];
+   adc_crc_ch_mismatch_s[2] <= (adc_crc_valid_p == 1'b1) ? adc_crc_mismatch_s[2] : adc_crc_ch_mismatch_s[2];
+   adc_crc_ch_mismatch_s[3] <= (adc_crc_valid_p == 1'b1) ? adc_crc_mismatch_s[3] : adc_crc_ch_mismatch_s[3];
+   adc_crc_ch_mismatch_s[4] <= (adc_crc_valid_p == 1'b1) ? adc_crc_mismatch_s[4] : adc_crc_ch_mismatch_s[4];
+   adc_crc_ch_mismatch_s[5] <= (adc_crc_valid_p == 1'b1) ? adc_crc_mismatch_s[5] : adc_crc_ch_mismatch_s[5];
+   adc_crc_ch_mismatch_s[6] <= (adc_crc_valid_p == 1'b1) ? adc_crc_mismatch_s[6] : adc_crc_ch_mismatch_s[6];
+   adc_crc_ch_mismatch_s[7] <= (adc_crc_valid_p == 1'b1) ? adc_crc_mismatch_s[7] : adc_crc_ch_mismatch_s[7];
    
   end
 
   // numbers of samples count 
 
-  assign adc_crc_cnt_value = 4'h4; 
-  assign adc_cnt_crc_enable_s = (adc_crc_scnt_8 < adc_crc_cnt_value) ? 1'b1 : 1'b0;
-  assign adc_crc_enable_int = (adc_ready_in_s == 1'b1) ? adc_crc_enable: 1'b0;
-
-  always @(negedge adc_clk) begin
-
-    if ((sync_miso_s == 1'b1) || (adc_cnt_crc_enable_s == 1'b0) || (adc_crc_enable == 1'b0) ) begin
-      adc_crc_scnt_8 <= 4'd0;
-    end else if (adc_crc_enable_int == 1'b1) begin
-      adc_crc_scnt_8 <= adc_crc_scnt_8 + 1'b1;
-    end
-  end
-
   always @(posedge adc_clk) begin
-      if (adc_crc_scnt_8 == adc_crc_cnt_value) begin
+    if ( (crc_in_sync_n == 1'b0) || (adc_crc_enable == 1'b0) ) begin
+      adc_crc_cnt <= 4'd0;
+    end else if ( (adc_valid_s == 1'b1) && (adc_crc_enable == 1'b1) ) begin
+      adc_crc_cnt <= adc_crc_cnt + 1'b1;
+    end
+
+    if (adc_crc_cnt == 4'h4) begin
       adc_crc_valid_p <= 1'b1;
     end else begin
       adc_crc_valid_p <= 1'b0;
     end
-    adc_crc_valid_p_d <= adc_crc_valid_p;
   end
 
-  // capturing 4 samples after sync flag 
+  // capturing crc samples 
 
 always @(posedge adc_clk) begin
-  adc_cnt_crc_enable_s_d  <= adc_cnt_crc_enable_s;
-  adc_cnt_crc_enable_s_dd <= adc_cnt_crc_enable_s_d;
-  if((adc_cnt_crc_enable_s_dd == 1'b1) && (adc_valid_s == 1'b1) ) begin 
+  if(adc_valid_s == 1'b1 ) begin 
     adc_crc_data_s[0] <= {adc_crc_data_s[0][71:0],adc_data_s[0][23:0]};
     adc_crc_data_s[1] <= {adc_crc_data_s[1][71:0],adc_data_s[1][23:0]};
     adc_crc_data_s[2] <= {adc_crc_data_s[2][71:0],adc_data_s[2][23:0]};
@@ -341,28 +321,14 @@ always @(posedge adc_clk) begin
     adc_crc_data_s[5] <= {adc_crc_data_s[5][71:0],adc_data_s[5][23:0]};
     adc_crc_data_s[6] <= {adc_crc_data_s[6][71:0],adc_data_s[6][23:0]};
     adc_crc_data_s[7] <= {adc_crc_data_s[7][71:0],adc_data_s[7][23:0]};
-  end else if(adc_cnt_crc_enable_s_dd == 1'b0) begin 
-    adc_crc_data_s[0] <= 94'd0;
-    adc_crc_data_s[1] <= 94'd0;
-    adc_crc_data_s[2] <= 94'd0;
-    adc_crc_data_s[3] <= 94'd0;
-    adc_crc_data_s[4] <= 94'd0;
-    adc_crc_data_s[5] <= 94'd0;
-    adc_crc_data_s[6] <= 94'd0;
-    adc_crc_data_s[7] <= 94'd0;
-  end
-end
-
-always @(posedge adc_clk) begin
-  if(adc_crc_valid_p == 1'b1 ) begin
-    adc_crc_data[0] <= adc_crc_data_s[0]; 
-    adc_crc_data[1] <= adc_crc_data_s[1];
-    adc_crc_data[2] <= adc_crc_data_s[2];
-    adc_crc_data[3] <= adc_crc_data_s[3];
-    adc_crc_data[4] <= adc_crc_data_s[4];
-    adc_crc_data[5] <= adc_crc_data_s[5];
-    adc_crc_data[6] <= adc_crc_data_s[6];
-    adc_crc_data[7] <= adc_crc_data_s[7];
+    adc_crc_read_data[0] <=adc_data_s[0][31:24];
+    adc_crc_read_data[1] <=adc_data_s[1][31:24];
+    adc_crc_read_data[2] <=adc_data_s[2][31:24];
+    adc_crc_read_data[3] <=adc_data_s[3][31:24];
+    adc_crc_read_data[4] <=adc_data_s[4][31:24];
+    adc_crc_read_data[5] <=adc_data_s[5][31:24];
+    adc_crc_read_data[6] <=adc_data_s[6][31:24];
+    adc_crc_read_data[7] <=adc_data_s[7][31:24];
     adc_crc_reg[0]  <= adc_crc_s[0];
     adc_crc_reg[1]  <= adc_crc_s[1];
     adc_crc_reg[2]  <= adc_crc_s[2];
@@ -372,14 +338,14 @@ always @(posedge adc_clk) begin
     adc_crc_reg[6]  <= adc_crc_s[6];
     adc_crc_reg[7]  <= adc_crc_s[7];
   end else begin 
-    adc_crc_data[0] <= 96'b0;
-    adc_crc_data[1] <= 96'b0;
-    adc_crc_data[2] <= 96'b0;
-    adc_crc_data[3] <= 96'b0;
-    adc_crc_data[4] <= 96'b0;
-    adc_crc_data[5] <= 96'b0;
-    adc_crc_data[6] <= 96'b0;
-    adc_crc_data[7] <= 96'b0;
+    adc_crc_read_data[0] <=8'b0;
+    adc_crc_read_data[1] <=8'b0;
+    adc_crc_read_data[2] <=8'b0;
+    adc_crc_read_data[3] <=8'b0;
+    adc_crc_read_data[4] <=8'b0;
+    adc_crc_read_data[5] <=8'b0;
+    adc_crc_read_data[6] <=8'b0;
+    adc_crc_read_data[7] <=8'b0;
     adc_crc_reg[0]  <= 'b0;
     adc_crc_reg[1]  <= 'b0;
     adc_crc_reg[2]  <= 'b0;
@@ -389,32 +355,10 @@ always @(posedge adc_clk) begin
     adc_crc_reg[6]  <= 'b0;
     adc_crc_reg[7]  <= 'b0;
 
-  end 
+  end
 end
 
  // capturing the CRC data generated by the chip
-
-  always @(posedge adc_clk) begin
-    if (adc_crc_valid_p == 1'b1) begin
-      adc_crc_read_data[0] <=adc_data_s_d[0][31:24];
-      adc_crc_read_data[1] <=adc_data_s_d[1][31:24];
-      adc_crc_read_data[2] <=adc_data_s_d[2][31:24];
-      adc_crc_read_data[3] <=adc_data_s_d[3][31:24];
-      adc_crc_read_data[4] <=adc_data_s_d[4][31:24];
-      adc_crc_read_data[5] <=adc_data_s_d[5][31:24];
-      adc_crc_read_data[6] <=adc_data_s_d[6][31:24];
-      adc_crc_read_data[7] <=adc_data_s_d[7][31:24];
-    end else begin
-      adc_crc_read_data[0] <=8'b0;
-      adc_crc_read_data[1] <=8'b0;
-      adc_crc_read_data[2] <=8'b0;
-      adc_crc_read_data[3] <=8'b0;
-      adc_crc_read_data[4] <=8'b0;
-      adc_crc_read_data[5] <=8'b0;
-      adc_crc_read_data[6] <=8'b0;
-      adc_crc_read_data[7] <=8'b0;
-    end
-  end
 
   assign adc_cnt_value = (adc_format  == 'h0) ? 'hff :  
                          (( adc_format == 'h1 || (adc_format == 'h0 && NUM_CHANNELS == 4 )) ? 'h7f : 'h1f );
@@ -460,7 +404,6 @@ end
     end 
   end
  
-  
  always @(posedge adc_clk) begin
     if (adc_valid_p == 1'b1) begin
       if( adc_format == 'h0 && NUM_CHANNELS == 8 ) begin          // 1 active line 
@@ -549,21 +492,6 @@ end
 
   always @(posedge adc_clk) begin
     adc_ready <= adc_sshot ~^ adc_ready_in_s;
-  end
-
-  // control signals
-
-  always @(posedge adc_clk) begin
-    sync_miso_m1 <= sync_miso;
-    sync_miso_m2 <= sync_miso_m1;
-  end
-
-  // rising edge detection sync_miso
-
-  assign sync_miso_s = sync_miso_m2 &~ sync_miso_d;
-
-  always @(posedge adc_clk) begin
-  sync_miso_d <= sync_miso_m2;
   end
 
 endmodule
