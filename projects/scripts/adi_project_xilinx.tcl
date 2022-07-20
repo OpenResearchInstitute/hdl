@@ -214,8 +214,12 @@ proc adi_project_create {project_name mode parameter_list device {board "not-app
   }
 
   set lib_dirs $ad_hdl_dir/library
-  if {$ad_hdl_dir ne $ad_ghdl_dir} {
-    lappend lib_dirs $ad_ghdl_dir/library
+  if {[info exists ::env(ADI_GHDL_DIR)]} {
+    if {$ad_hdl_dir ne $ad_ghdl_dir} {
+      lappend lib_dirs $ad_ghdl_dir/library
+    }
+  } else {
+    # puts -nonew-line "INFO: ADI_GHDL_DIR not defined.\n"
   }
 
   # Set a common IP cache for all projects
