@@ -412,7 +412,7 @@ add_files ../../../../dvb_fpga/build/vivado/dvbs2_encoder_wrapper.vhd
 ad_connect $sys_cpu_clk dvbs2_encoder_wrapper_0/clk
 ad_ip_parameter dvbs2_encoder_wrapper_0 CONFIG.INPUT_DATA_WIDTH 32
 
-ad_connect sys_cpu_resetn dvbs2_encoder_wrapper_0/rst_n
+ad_connect $sys_cpu_resetn dvbs2_encoder_wrapper_0/rst_n
 #ad_cpu_interconnect 0x43C10000 dvbs2_encoder_wrapper_0
 #below is original zc706 address
 #ad_cpu_interconnect 0x44AB8000 dvbs2_encoder_wrapper_0
