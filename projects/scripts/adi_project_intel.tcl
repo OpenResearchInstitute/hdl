@@ -3,18 +3,6 @@
 set family "none"
 set device "none"
 
-## Define the supported tool version
-if {![info exists REQUIRED_QUARTUS_VERSION]} {
-  set REQUIRED_QUARTUS_VERSION "21.2.0"
-}
-
-## Define the ADI_IGNORE_VERSION_CHECK environment variable to skip version check
-if {[info exists ::env(ADI_IGNORE_VERSION_CHECK)]} {
-  set IGNORE_VERSION_CHECK 1
-} elseif {![info exists IGNORE_VERSION_CHECK]} {
-  set IGNORE_VERSION_CHECK 0
-}
-
 ## Create a project.
 #
 # \param[project_name] - name of the project, must contain a valid carrier name
