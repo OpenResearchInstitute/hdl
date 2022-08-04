@@ -174,9 +174,12 @@ module system_top (
     .O (ref_clk1),
     .ODIV2 ());
 
-  BUFG i_bufg_ref_clk (
-    .I (ref_clk1),
-    .O (ref_clk1_bufg));
+  //Edits recommended by Engineer Zone
+  //to solve error preventing synthesis.
+  //
+  //BUFG i_bufg_ref_clk (
+  //  .I (ref_clk1),
+  //  .O (ref_clk1_bufg));
 
   OBUFDS i_obufds_rx_sync (
     .I (rx_sync),
@@ -337,7 +340,10 @@ module system_top (
     .tx_ref_clk_0 (ref_clk1),
     .tx_sync_0 (tx_sync),
     .tx_sysref_0 (sysref),
-    .ref_clk (ref_clk1_bufg));
+    //Edits recommended from Engineer Zone
+    //to solve build error preventing synthesis.
+    //
+    //.ref_clk (ref_clk1_bufg));
 
 endmodule
 
