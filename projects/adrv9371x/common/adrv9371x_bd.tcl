@@ -411,19 +411,14 @@ add_files ../../../../dvb_fpga/build/vivado/dvbs2_encoder_wrapper.vhd
 #added $ to sys_cpu_clk -mdt
 ad_connect $sys_cpu_clk dvbs2_encoder_wrapper_0/clk
 ad_ip_parameter dvbs2_encoder_wrapper_0 CONFIG.INPUT_DATA_WIDTH 32
-
 ad_connect $sys_cpu_resetn dvbs2_encoder_wrapper_0/rst_n
+
+#below is the address for the PLUTO
 #ad_cpu_interconnect 0x43C10000 dvbs2_encoder_wrapper_0
-#below is original zc706 address
-#ad_cpu_interconnect 0x44AB8000 dvbs2_encoder_wrapper_0
-#below is a test to see if 64k alignment is better than 32k
-#this is a long shot but we should know how to change the address
+#below is the address for zc706
 ad_cpu_interconnect 0x44AC0000 dvbs2_encoder_wrapper_0
 
-ad_connect axi_ad9371_tx_dma/m_axis_data dvbs2_encoder_wrapper_0/s_axis_tdata
-ad_connect axi_ad9371_tx_dma/m_axis_last dvbs2_encoder_wrapper_0/s_axis_tlast
-ad_connect axi_ad9371_tx_dma/m_axis_valid dvbs2_encoder_wrapper_0/s_axis_tvalid
-ad_connect axi_ad9371_tx_dma/m_axis_ready dvbs2_encoder_wrapper_0/s_axis_tready
+ad_connect dvbs2_encoder_wrapper_0/s_axis axi_ad9372_tx_dma/m_axis
 
 ad_connect axi_ad9371_dacfifo/dma_data dvbs2_encoder_wrapper_0/m_axis_tdata
 ad_connect axi_ad9371_dacfifo/dma_xfer_last dvbs2_encoder_wrapper_0/m_axis_tlast
